@@ -38,7 +38,7 @@
 services:
   # ── Redis Stream Bridge ────────────────────────────────────────────────
   redis:
-    image: redis:7-alpine
+    image: redis:8.8.0
     container_name: deer-flow-redis
     command: ["redis-server", "--appendonly", "yes"]
     volumes:
@@ -119,7 +119,7 @@ services:
   # ── Reverse Proxy ──────────────────────────────────────────────────────
   # Routes API traffic to gateway and (optionally) provisioner.
   nginx:
-    image: nginx:alpine
+    image: nginx:1.31.4
     container_name: deer-flow-nginx
     # Loopback-only by default; see the note in docker-compose.yaml. Override
     # with BIND_HOST when you deliberately need the dev stack reachable from

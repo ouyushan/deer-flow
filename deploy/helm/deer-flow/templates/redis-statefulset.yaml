@@ -23,7 +23,7 @@ spec:
     spec:
       {{- include "deer-flow.imagePullSecrets" . | nindent 6 }}
       securityContext:
-        # Non-root: redis:7-alpine ships a `redis` user (uid 999). The official
+        # Non-root: redis:8.8.0 ships a `redis` user (uid 999). The official
         # entrypoint detects non-root and skips the gosu dance. fsGroup 999
         # makes the data PVC group-writable.
         runAsNonRoot: true

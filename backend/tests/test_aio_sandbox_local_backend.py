@@ -2004,7 +2004,7 @@ def test_restricted_network_proxy_enforces_and_approves_real_traffic(monkeypatch
     if not _docker_daemon_available():
         pytest.skip("requires a running Docker daemon")
 
-    image = os.environ.get("DEER_FLOW_SANDBOX_NETWORK_SMOKE_IMAGE", "python:3.12-alpine")
+    image = os.environ.get("DEER_FLOW_SANDBOX_NETWORK_SMOKE_IMAGE", "python:3.12-slim-bookworm")
     backend = LocalContainerBackend(
         image=image,
         base_port=18310,

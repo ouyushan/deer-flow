@@ -27,7 +27,7 @@
 services:
   # ── Redis Stream Bridge ────────────────────────────────────────────────────
   redis:
-    image: redis:7-alpine
+    image: redis:8.8.0
     container_name: deer-flow-redis
     command: ["redis-server", "--appendonly", "yes"]
     volumes:
@@ -43,7 +43,7 @@ services:
 
   # ── Reverse Proxy ──────────────────────────────────────────────────────────
   nginx:
-    image: nginx:alpine
+    image: nginx:1.31.4
     container_name: deer-flow-nginx
     # Loopback-only by default: DeerFlow's agent can execute commands, so the
     # documented default deployment is a local trusted environment. A bare

@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=python:3.12-alpine
+ARG BASE_IMAGE=python:3.12-bookworm-slim
 FROM ${BASE_IMAGE}
 
 # BASE_IMAGE is overridable for offline smoke tests. Production uses the small

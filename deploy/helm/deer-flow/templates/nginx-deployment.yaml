@@ -22,7 +22,7 @@ spec:
         checksum/nginx: {{ include "deer-flow.nginxChecksum" . }}
     spec:
       securityContext:
-        # Non-root: nginx:alpine ships a `nginx` user (uid 101). /etc/nginx and
+        # Non-root: nginx:1.31.4 ships a `nginx` user (uid 101). /etc/nginx and
         # /var/cache/nginx are root-owned, so the command writes the rendered
         # config to /tmp and we mount an emptyDir on the cache dir (below).
         runAsNonRoot: true

@@ -1,16 +1,17 @@
-# Backend Dockerfile — multi-stage build
+# Backend Dockerfile - multi-stage build
 # Stage 1 (builder): compiles native Python extensions with build-essential
 # Stage 2 (dev):     retains toolchain for dev containers (uv sync at startup)
 # Stage 3 (runtime): clean image without compiler toolchain for production
 
-# UV source image (override for restricted networks that cannot reach ghcr.io)
+# Source images (override for restricted networks if needed)
 ARG UV_IMAGE=ghcr.io/astral-sh/uv:0.11.1
+ARG NODE_MAJOR=22
 FROM ${UV_IMAGE} AS uv-source
+FROM node:${NODE_MAJOR}-bookworm-slim AS node-source
 
-# ── Stage 1: Builder ──────────────────────────────────────────────────────────
+# -- Stage 1: Builder ----------------------------------------------------------
 FROM python:3.12-slim-bookworm AS builder
 
-ARG NODE_MAJOR=22
 ARG APT_MIRROR
 ARG UV_INDEX_URL
 ARG NPM_REGISTRY
@@ -25,19 +26,16 @@ RUN if [ -n "${APT_MIRROR}" ]; then \
       sed -i "s|deb.debian.org|${APT_MIRROR}|g" /etc/apt/sources.list 2>/dev/null || true; \
     fi
 
-# Install build tools + Node.js (build-essential needed for native Python extensions)
+# Install build tools (build-essential needed for native Python extensions)
 RUN apt-get update && apt-get install -y \
     curl \
     git \
     build-essential \
-    gnupg \
     ca-certificates \
-    && mkdir -p /etc/apt/keyrings \
-    && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
-    && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_${NODE_MAJOR}.x nodistro main" > /etc/apt/sources.list.d/nodesource.list \
-    && apt-get update \
-    && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
+
+# Provide Node.js + npm without using NodeSource bootstrap (helps restricted TLS networks).
+COPY --from=node-source /usr/local/ /usr/local/
 
 # Install the official Lark/Feishu CLI used by the managed Lark integration.
 RUN if [ -n "${NPM_REGISTRY}" ]; then npm config set registry "${NPM_REGISTRY}"; fi \
@@ -79,7 +77,7 @@ ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 ENV PYTHONIOENCODING=utf-8
 
-# ── Stage 2: Dev ──────────────────────────────────────────────────────────────
+# -- Stage 2: Dev --------------------------------------------------------------
 # Retains compiler toolchain from builder so startup-time `uv sync` can build
 # source distributions in development containers.
 FROM builder AS dev
@@ -91,22 +89,21 @@ EXPOSE 8001
 
 CMD ["sh", "-c", "cd backend && PYTHONPATH=. uv run --no-sync uvicorn app.gateway.app:app --host 0.0.0.0 --port 8001"]
 
-# ── Stage 3: Runtime ──────────────────────────────────────────────────────────
-# Clean image without build-essential — reduces size (~200 MB) and attack surface.
+# -- Stage 3: Runtime ----------------------------------------------------------
+# Clean image without build-essential - reduces size and attack surface.
 FROM python:3.12-slim-bookworm
 
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 ENV PYTHONIOENCODING=utf-8
 
-# Copy Node.js runtime from builder (provides npx for MCP servers)
-COPY --from=builder /usr/bin/node /usr/bin/node
-COPY --from=builder /usr/lib/node_modules /usr/lib/node_modules
-RUN ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/bin/npm \
-    && ln -s ../lib/node_modules/npm/bin/npx-cli.js /usr/bin/npx \
-    && LARK_CLI_BIN="$(node -p 'const bin=require("/usr/lib/node_modules/@larksuite/cli/package.json").bin; typeof bin === "string" ? bin : (bin["lark-cli"] || Object.values(bin)[0])')" \
-    && ln -s "../lib/node_modules/@larksuite/cli/${LARK_CLI_BIN#./}" /usr/bin/lark-cli \
-    && lark-cli --version
+# Copy Node.js runtime from builder (provides npm/npx and global CLI tools for MCP servers)
+COPY --from=builder /usr/local/bin/node /usr/local/bin/node
+COPY --from=builder /usr/local/bin/npm /usr/local/bin/npm
+COPY --from=builder /usr/local/bin/npx /usr/local/bin/npx
+COPY --from=builder /usr/local/bin/lark-cli /usr/local/bin/lark-cli
+COPY --from=builder /usr/local/lib/node_modules /usr/local/lib/node_modules
+RUN lark-cli --version
 
 # Install Docker CLI (for DooD: allows starting sandbox containers via host Docker socket)
 COPY --from=docker:cli /usr/local/bin/docker /usr/local/bin/docker

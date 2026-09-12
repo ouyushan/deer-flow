@@ -267,7 +267,7 @@ kubectl -n deer-flow exec deploy/deer-flow-provisioner -- curl -s localhost:8002
   changing these startup-only settings. This does not remove the broader
   Gateway replica limitations described above.
 - **Redis stream bridge.** A bundled single-instance redis StatefulSet
-  (`redis.enabled: true`, `redis:7-alpine`) runs in the namespace and the
+  (`redis.enabled: true`, `redis:8.8.0`) runs in the namespace and the
   gateway connects via the in-cluster Service. Per-run SSE events are stored in
   Redis Streams (PR #3191) so a client connected to any gateway pod receives
   live events and reconnect resumes from `Last-Event-ID`. The URL is
@@ -304,7 +304,7 @@ container escalates privileges or runs as uid 0.
 | nginx | 101 (`nginx`) | 101 | command writes the rendered config to `/tmp/nginx.conf` and loads `nginx -c /tmp/nginx.conf` (since `/etc/nginx` is root-owned); `emptyDir` at `/var/cache/nginx` |
 | provisioner | 1000 | — | no PVC; `PYTHONDONTWRITEBYTECODE=1` |
 | postgres | 999 (`postgres`) | 999 | official `postgres:16` entrypoint detects non-root and skips the chown/gosu dance; data PVC group-writable via fsGroup |
-| redis | 999 (`redis`) | 999 | official `redis:7-alpine` entrypoint detects non-root and skips the gosu dance; data PVC group-writable via fsGroup |
+| redis | 999 (`redis`) | 999 | official `redis:8.8.0` entrypoint detects non-root and skips the gosu dance; data PVC group-writable via fsGroup |
 
 Every container sets:
 

@@ -166,7 +166,7 @@ redis:
   enabled: true
   image:
     repository: redis
-    tag: "7-alpine"
+    tag: "8.8.0"
   auth:
     # -- Empty (default) = no auth, matching the compose deployment (ClusterIP
     #    isolation only). Set a password to enable AUTH; the DSN becomes
